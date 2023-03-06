@@ -12,3 +12,6 @@ Grind Rate: 4000 (iterations) * 1000 (samples) / 804.4 (time) * 10 (batch size) 
 Cost: 0.001  
 Train Accuracy: 93.9%  
 Test Accuracy: 76.7%  
+
+## Sample command line argument for execution
+python3 NN.py 1 20 4000 10
