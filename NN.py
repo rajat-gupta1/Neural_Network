@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 import random
 import math
 from mnist import MNIST
@@ -78,7 +79,7 @@ def Forward_prop(x, y, w_list, b_list, nl, Error, i, input_nodes):
     return Error, a, z, del_error, input
 
 def Backward_prop(der_blist, der_wlist, del_error, a, z, w_list, input, nl, output_nodes):
-    del_l2 = del_error.reshape(output_nodes, 1)
+    del_l2 = del_error.reshape(output_nodes, 1) * sigmoid_dash(z[-1])
     der_blist[-1] += del_l2 
     der_wlist[-1]  += np.matmul(del_l2, a[-1].T)
 
@@ -101,19 +102,21 @@ def main():
     y = np.array(y)
     X = X / 255
 
-    alpha = 0.1
-    input_size = 4000
-    nh = 10
-    nl = 1
+    alpha = 0.2
+    input_size = 10
+    nl = int(sys.argv[1])
+    nh = int(sys.argv[2])
+    ne = int(sys.argv[3])
+    nb = int(sys.argv[4])
     output_nodes = 10
     input_nodes = 784
-    nb = 10
+    
 
     tic = time.perf_counter()
 
     b_list, w_list = b_w_initialisation(nh, nl, input_nodes, output_nodes)
 
-    for j in range(100):
+    for j in range(ne):
         selection_list = np.random.choice(input_size, input_size, replace=False)
         loop_cnt = 0
         for l in range(int(input_size / nb)):
@@ -127,7 +130,6 @@ def main():
                 der_blist, der_wlist = Backward_prop(der_blist, der_wlist, del_error, a, z, w_list, input, nl, output_nodes)
 
             Error = np.linalg.norm(Error) / input_size / 2 * nb
-            
             
             for k in range(nl + 1):
                 w_list[k] -= alpha * der_wlist[k] / input_size
@@ -174,7 +176,7 @@ def main():
         a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
 
         for k in range(nl - 1):
-            a, z = Forward_helper(a, z, k + 1, a[-1], w_list, b_list, 1)
+            a, z =  Forward_helper(a, z, k + 1, a[-1], w_list, b_list, 1)
 
         a, z = Forward_helper(a, z, -1, a[-1], w_list, b_list, 0)
         yhat = sigmoid(z[-1])
