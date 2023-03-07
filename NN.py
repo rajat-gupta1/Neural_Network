@@ -29,9 +29,12 @@ def b_w_initialisation(nh, nl, input_nodes, output_nodes):
 
     w_list = []
     w_list.append(np.random.normal(0, 1, size=(nh, input_nodes)))
+    # w_list.append(np.ones((nh, input_nodes)))
     for i in range(nl - 1):
         w_list.append(np.random.normal(0, 1, size=(nh, nh)))
+        # w_list.append(np.ones((nh, nh)))
     w_list.append(np.random.normal(0, 1, size=(output_nodes, nh)))
+    # w_list.append(np.ones((output_nodes, nh)))
     return b_list, w_list
 
 def Forward_helper(a, z, iter, param2, w_list, b_list, cond):
@@ -45,8 +48,8 @@ def Forward_prop(x, y, w_list, b_list, nl, Error, i, input_nodes):
     a = []
     # Forward
     input = np.array(x[i]).reshape(input_nodes, 1)
-    z.append(np.matmul(w_list[0], input) + b_list[0])
-    a.append(sigmoid(z[0]))
+    # z.append(np.matmul(w_list[0], input) + b_list[0])
+    # a.append(sigmoid(z[0]))
     a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
 
     for k in range(nl - 1):
@@ -74,7 +77,8 @@ def Forward_prop(x, y, w_list, b_list, nl, Error, i, input_nodes):
         y_i = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0]).reshape(10, 1)
     else:
         y_i = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]).reshape(10, 1)
-    Error += (y_i - yhat) ** 2
+    this_error = np.linalg.norm(y_i - yhat)
+    Error += (this_error) ** 2
     del_error = yhat - y_i
     return Error, a, z, del_error, input
 
@@ -102,8 +106,13 @@ def main():
     y = np.array(y)
     X = X / 255
 
-    alpha = 0.2
-    input_size = 10
+    (train_data, test_data, train_labels, test_labels) = train_test_split(X, y, test_size=0.9)
+
+    X = train_data
+    y = train_labels
+
+    alpha = 0.1
+    input_size = len(train_data)
     nl = int(sys.argv[1])
     nh = int(sys.argv[2])
     ne = int(sys.argv[3])
@@ -119,8 +128,10 @@ def main():
     for j in range(ne):
         selection_list = np.random.choice(input_size, input_size, replace=False)
         loop_cnt = 0
+        cum_error = 0
         for l in range(int(input_size / nb)):
-            Error = np.zeros((output_nodes, 1))
+            # Error = np.zeros((output_nodes, 1))
+            Error = 0
             del_error = np.zeros((output_nodes, 1))
             der_blist = [0 for _ in range(nl + 1)]
             der_wlist = [0 for _ in range(nl + 1)]
@@ -129,16 +140,21 @@ def main():
                 Error, a, z, del_error, input = Forward_prop(X, y, w_list, b_list, nl, Error, i, input_nodes)
                 der_blist, der_wlist = Backward_prop(der_blist, der_wlist, del_error, a, z, w_list, input, nl, output_nodes)
 
-            Error = np.linalg.norm(Error) / input_size / 2 * nb
+            Error = Error / nb / 2 
             
             for k in range(nl + 1):
-                w_list[k] -= alpha * der_wlist[k] / input_size
-                b_list[k] -= alpha * der_blist[k] / input_size
+                w_list[k] -= alpha * der_wlist[k] / nb
+                b_list[k] -= alpha * der_blist[k] / nb
             
             loop_cnt += 1
+            cum_error += Error
         
-        if j % 500 == 0:
-            print(Error)
+        cum_error /= loop_cnt
+        if j % 50 == 0:
+            print(cum_error)
+
+        if cum_error <= 0.01:
+            break
     
     print(Error)
 
@@ -151,8 +167,6 @@ def main():
         z = []
         a = []
         input = np.array(X[i]).reshape(input_nodes, 1)
-        z.append(np.matmul(w_list[0], input) + b_list[0])
-        a.append(sigmoid(z[0]))
         a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
 
         for k in range(nl - 1):
@@ -165,14 +179,35 @@ def main():
     
     print(f"Train Accuracy = {(correct / input_size)}")
 
+    # correct = 0
+
+    # for i in range(input_size, 60000):
+    #     z = []
+    #     a = []
+    #     input = np.array(X[i]).reshape(input_nodes, 1)
+    #     a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
+
+    #     for k in range(nl - 1):
+    #         a, z =  Forward_helper(a, z, k + 1, a[-1], w_list, b_list, 1)
+
+    #     a, z = Forward_helper(a, z, -1, a[-1], w_list, b_list, 0)
+    #     yhat = sigmoid(z[-1])
+    #     if np.argmax(yhat) == y[i]:
+    #         correct += 1
+    
+    # print(f"Test Accuracy = {correct / (60000 - input_size)}")
+
     correct = 0
 
-    for i in range(input_size, 60000):
+    Xtest, ytest = mndata.load_testing()
+    Xtest = np.array(Xtest)
+    ytest = np.array(ytest)
+    Xtest = Xtest / 255
+
+    for i in range(10000):
         z = []
         a = []
-        input = np.array(X[i]).reshape(input_nodes, 1)
-        z.append(np.matmul(w_list[0], input) + b_list[0])
-        a.append(sigmoid(z[0]))
+        input = np.array(Xtest[i]).reshape(input_nodes, 1)
         a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
 
         for k in range(nl - 1):
@@ -180,10 +215,10 @@ def main():
 
         a, z = Forward_helper(a, z, -1, a[-1], w_list, b_list, 0)
         yhat = sigmoid(z[-1])
-        if np.argmax(yhat) == y[i]:
+        if np.argmax(yhat) == ytest[i]:
             correct += 1
     
-    print(f"Test Accuracy = {correct / (60000 - input_size)}")
+    print(f"Test Accuracy 2 = {correct / 10000}")
 
 if __name__ == "__main__":
     main()
