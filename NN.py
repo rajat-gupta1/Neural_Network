@@ -84,7 +84,7 @@ def Forward_prop(x, y, w_list, b_list, nl, Error, i, input_nodes):
 
 def Backward_prop(der_blist, der_wlist, del_error, a, z, w_list, input, nl, output_nodes):
     del_l2 = del_error.reshape(output_nodes, 1) * sigmoid_dash(z[-1])
-    der_blist[-1] += del_l2 
+    der_blist[-1] += del_l2
     der_wlist[-1]  += np.matmul(del_l2, a[-1].T)
 
     for k in range(nl - 1):
@@ -106,7 +106,7 @@ def main():
     y = np.array(y)
     X = X / 255
 
-    (train_data, test_data, train_labels, test_labels) = train_test_split(X, y, test_size=0.9)
+    (train_data, test_data, train_labels, test_labels) = train_test_split(X, y, test_size=70)
 
     X = train_data
     y = train_labels
@@ -124,7 +124,7 @@ def main():
     tic = time.perf_counter()
 
     b_list, w_list = b_w_initialisation(nh, nl, input_nodes, output_nodes)
-
+    prev_cum_error = 0
     for j in range(ne):
         selection_list = np.random.choice(input_size, input_size, replace=False)
         loop_cnt = 0
@@ -150,13 +150,15 @@ def main():
             cum_error += Error
         
         cum_error /= loop_cnt
-        if j % 50 == 0:
-            print(cum_error)
+        # if j % 50 == 0:
+        print(f"Iteration: {j}")
+        print(f"Error: {cum_error}")
 
-        if cum_error <= 0.01:
+        if cum_error <= 0.03 or abs(cum_error - prev_cum_error) < 10e-6:
             break
+        prev_cum_error = cum_error
     
-    print(Error)
+    # print(f"Error: {cum_error}")
 
     toc = time.perf_counter()
     print(f"Time = {toc - tic:0.4f} seconds")
@@ -179,23 +181,23 @@ def main():
     
     print(f"Train Accuracy = {(correct / input_size)}")
 
-    # correct = 0
+    correct = 0
 
-    # for i in range(input_size, 60000):
-    #     z = []
-    #     a = []
-    #     input = np.array(X[i]).reshape(input_nodes, 1)
-    #     a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
+    for i in range(len(test_data)):
+        z = []
+        a = []
+        input = np.array(test_data[i]).reshape(input_nodes, 1)
+        a, z = Forward_helper(a, z, 0, input, w_list, b_list, 1)
 
-    #     for k in range(nl - 1):
-    #         a, z =  Forward_helper(a, z, k + 1, a[-1], w_list, b_list, 1)
+        for k in range(nl - 1):
+            a, z =  Forward_helper(a, z, k + 1, a[-1], w_list, b_list, 1)
 
-    #     a, z = Forward_helper(a, z, -1, a[-1], w_list, b_list, 0)
-    #     yhat = sigmoid(z[-1])
-    #     if np.argmax(yhat) == y[i]:
-    #         correct += 1
+        a, z = Forward_helper(a, z, -1, a[-1], w_list, b_list, 0)
+        yhat = sigmoid(z[-1])
+        if np.argmax(yhat) == test_labels[i]:
+            correct += 1
     
-    # print(f"Test Accuracy = {correct / (60000 - input_size)}")
+    print(f"Test Accuracy = {correct / len(test_data)}")
 
     correct = 0
 
