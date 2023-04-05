@@ -24,6 +24,9 @@ double GetTimer(){
 
 
 void shuffle(int *arr) {
+    /* Function to randomly shuffle the input dataset at the start
+    of each epoch
+    */
     int n = input_size;
     for(int i = n-1; i >= 1; i--) {
         int j = rand() % (i+1);
@@ -35,31 +38,35 @@ void shuffle(int *arr) {
 
 void w_initialisation(double *w_list, int w_list_size)
 {
+    /* Function to randomly initialise Weights */
     for (int i = 0; i < w_list_size; i++)
         w_list[i] = ((double)rand() / (double)RAND_MAX) * 2 - 1;
-        // w_list[i] = 0.31;
 }
 
 void initialise_with0 (double *list, int list_size)
 {
+    /* Function to initialise all elements of a list with 0 */
     for (int i = 0; i < list_size; i++)
         list[i] = 0;
 }
 
 void sigmoid (int position, double *list, int list_size, double *list2)
 {
+    // Function to find calculate sigmoid function
     for (int i = position; i < position + list_size; i++)
         list[i] = 1.0 / (1.0 + exp(-list2[i]));
 }
 
 void sigmoid_dash (int position, double *list, int list_size, double *list2)
 {
+    // Function to find derivative of the sigmoid function
     for (int i = position; i < position + list_size; i++)
         list[i] = (1.0 / (1.0 + exp(-list2[i]))) * (1.0 - (1.0 / (1.0 + exp(-list2[i]))));
 }
 
 void matrix_mult(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2, int ctr1_prev)
 {
+    // Function to do matrix multiplication
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j + ctr1] += arr1[j * dim2 + k + ctr2] * arr2[k + ctr1_prev];
@@ -67,18 +74,21 @@ void matrix_mult(double *arr1, double *arr2, int dim1, int dim2, double *arr_res
 
 void vector_add(double *arr1, double *arr2, int dim, double *arr_res, int ctr)
 {
+    // Function to do vector addition
     for (int i = 0 + ctr; i < ctr + dim; i++)
         arr_res[i] = arr1[i] + arr2[i];
 }
 
 void dot_product(double *arr1, double *arr2, int dim, double *arr_res, int ctr)
 {
+    // Function to do dot product
     for (int i = 0; i < dim; i++)
         arr_res[i] = arr1[i] * arr2[i + ctr];
 }
 
 void matrix_mult_back(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2)
 {
+    // Function to do matrix multiplication during back propagation
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j * dim2 + k + ctr1] += arr1[j] * arr2[k + ctr2];
@@ -86,6 +96,7 @@ void matrix_mult_back(double *arr1, double *arr2, int dim1, int dim2, double *ar
 
 void matrix_mult_back2(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2)
 {
+    // Function to do matrix multiplication during backpropagation
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j] += arr1[j + k * dim1 + ctr1] * arr2[k];
@@ -93,7 +104,10 @@ void matrix_mult_back2(double *arr1, double *arr2, int dim1, int dim2, double *a
 
 void Forward_prop(double *X, double y, int i, double *w_list, double *b_list, int nh, int nl, double *error, double *a, double *z, double *del_error)
 {
+    // Function to do forward propagation
     int j_ctr = 0, k_ctr = 0;
+
+    // Creating arrays a and z
     initialise_with0 (z, nh * nl + output_nodes);
     initialise_with0 (a, nh * nl + output_nodes);
 
@@ -104,6 +118,7 @@ void Forward_prop(double *X, double y, int i, double *w_list, double *b_list, in
     j_ctr += nh;
     k_ctr += input_nodes * nh;
 
+    // In case there is more than one hidden layer
     for (int j = 0; j < nl - 1; j++)
     {
         matrix_mult(w_list, a, nh, nh, z, j_ctr, k_ctr, prev_j_ctr);
@@ -120,6 +135,7 @@ void Forward_prop(double *X, double y, int i, double *w_list, double *b_list, in
 
     double this_error = 0;
 
+    // Finding the error for this iteration
     for (int j = 0; j < output_nodes; j++)
     {
         if ((int)y == j)
@@ -127,15 +143,14 @@ void Forward_prop(double *X, double y, int i, double *w_list, double *b_list, in
         else
             del_error[j] = a[j + j_ctr];
         this_error += pow(del_error[j], 2);
-        // printf("%f ", del_error[j]);
     }
-    // printf("\n");
     *error += this_error;
 }
 
 
 void Backward_prop(double *der_blist, double *der_wlist, double *del_error, double *a, double *z, double *w_list, double *X, int nl, int nh)
 {
+    // Function to do backward propagation
     int j_ctr = nh * nl;
     int k_ctr =  (nh * input_nodes) + (nl - 1) * nh * nh;
     sigmoid_dash(j_ctr, z, output_nodes, z);
@@ -144,9 +159,7 @@ void Backward_prop(double *der_blist, double *der_wlist, double *del_error, doub
     for (int j = 0; j < output_nodes; j++)
     {
         der_blist[j_ctr + j] += del_l2[j];
-        // printf("%f ", del_l2[j]);
     }
-    // printf("\n");
     
     j_ctr -= nh;
     matrix_mult_back(del_l2, a, output_nodes, nh, der_wlist, k_ctr, j_ctr);
@@ -156,6 +169,7 @@ void Backward_prop(double *der_blist, double *der_wlist, double *del_error, doub
     int ctr = 1;
     double *temp;
 
+    // In case of more than one hidden layer
     for (int k = 0; k < nl - 1; k++)
     {
         initialise_with0(del_l1, nh);
@@ -184,7 +198,6 @@ void Backward_prop(double *der_blist, double *der_wlist, double *del_error, doub
         del_l2 = temp;
     }
 
-    // double *del_l1 = (double*)malloc((nh) * sizeof (double));
     initialise_with0(del_l1, nh);
     sigmoid_dash(j_ctr, z, nh, z);
     matrix_mult_back2(w_list, del_l2, nh, output_nodes, del_l1, k_ctr, j_ctr);
@@ -197,12 +210,6 @@ void Backward_prop(double *der_blist, double *der_wlist, double *del_error, doub
 
     matrix_mult_back(del_l1, X, nh, input_nodes, der_wlist, k_ctr, j_ctr);
 
-    // int b_list_size = nh * nl + output_nodes;
-    // for (int j = 0; j < b_list_size; j++)
-    // {
-    //     printf("%f ", der_blist[j]);
-    // }
-
     free(del_l2);
     free(del_l1);
 }
@@ -214,16 +221,26 @@ int main(int argc, char** argv)
 
     double alpha = 0.1;
 
+    // Number of hidden layers
     int nl = atoi(argv[1]);
+
+    // Number of nodes in each layer
     int nh = atoi(argv[2]);
+
+    // Number of epochs
     int ne = atoi(argv[3]);
+
+    // Batch Size
     int nb = atoi(argv[4]);
 
+    // Size of flattened b list and w list
     int b_list_size = nh * nl + output_nodes;
     int w_list_size = (nh * input_nodes) + (nl - 1) * nh * nh + output_nodes * nh;
     double *b_list = (double*)malloc((b_list_size) * sizeof(double));
     double *w_list = (double*)malloc((w_list_size) * sizeof(double));
     double *del_error = (double*)malloc(output_nodes * sizeof(double));
+
+    // Derivative of flattened b and w array
     double *der_blist = (double*)malloc((b_list_size) * sizeof(double));
     double *der_wlist = (double*)malloc((w_list_size) * sizeof(double));
     double *a = (double*)malloc((nh * nl + output_nodes) * sizeof (double));
@@ -240,6 +257,7 @@ int main(int argc, char** argv)
     int loop_cnt = 0;
     int batches = input_size / nb;
 
+    // Calculating the start time
     StartTimer();
 
     for (int j = 0; j < ne; j++)
@@ -262,6 +280,7 @@ int main(int argc, char** argv)
             loop_cnt += 1;
             cum_error += error;
 
+            // Updating the values of w and b
             for (int k = 0; k < w_list_size; k++)
             {
                 w_list[k] -= (alpha * der_wlist[k] / nb);
@@ -269,11 +288,14 @@ int main(int argc, char** argv)
             for (int k = 0; k < b_list_size; k++)
                 b_list[k] -= (alpha * der_blist[k] / nb);
         }
+
+        // Calculating and printing the error
         cum_error /= loop_cnt;
 
         if (j % 10 == 0)
             printf("Error: %f\n", cum_error);
         
+        // In case the error goes beyond threshold
         if (cum_error < 0.03)
             break;
     }
@@ -281,6 +303,7 @@ int main(int argc, char** argv)
     const double tElapsed = GetTimer() / 1000.0;
     printf("TotalTime: %1.1fs\n", tElapsed);
 
+    // Finding train and test accuracies
     int cnt = 0;
     for (int i = 0; i < input_size; i++)
     {
@@ -373,6 +396,7 @@ int main(int argc, char** argv)
     accuracy = (double)cnt / 10000.0;
     printf("Test Accuracy: %f\n", accuracy);
 
+    // Freeing up memory
     for (int i = 0; i < NUM_TRAIN; i++)
         free(train_image[i]);
 

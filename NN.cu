@@ -11,6 +11,9 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 void shuffle(int *arr) {
+    /* Function to randomly shuffle the input dataset at the start
+    of each epoch
+    */
     int n = input_size;
     for(int i = n-1; i >= 1; i--) {
         int j = rand() % (i+1);
@@ -22,42 +25,48 @@ void shuffle(int *arr) {
 
 void w_initialisation(double *w_list, int w_list_size)
 {
+    /* Function to randomly initialise Weights */
     for (int i = 0; i < w_list_size; i++)
         w_list[i] = ((double)rand() / (double)RAND_MAX) * 2 - 1;
-        // w_list[i] = 0.31;
 }
 
 void initialise_with0 (double *list, int list_size)
 {
+    /* Function to initialise all elements of a list with 0 */
     for (int i = 0; i < list_size; i++)
         list[i] = 0;
 }
 
 __device__ void initialise_with00 (double *list, int list_size)
 {
+    /* Function to initialise all elements of a list with 0 for device */
     for (int i = 0; i < list_size; i++)
         list[i] = 0;
 }
 
 __device__ void sigmoid (int position, double *list, int list_size, double *list2)
 {
+    // Function to find calculate sigmoid function for Device
     for (int i = position; i < position + list_size; i++)
         list[i] = 1.0 / (1.0 + exp(-list2[i]));
 }
 void sigmoid2 (int position, double *list, int list_size, double *list2)
 {
+    // Function to find calculate sigmoid function
     for (int i = position; i < position + list_size; i++)
         list[i] = 1.0 / (1.0 + exp(-list2[i]));
 }
 
 __device__ void sigmoid_dash (int position, double *list, int list_size, double *list2)
 {
+    // Function to find derivative of the sigmoid function
     for (int i = position; i < position + list_size; i++)
         list[i] = (1.0 / (1.0 + exp(-list2[i]))) * (1.0 - (1.0 / (1.0 + exp(-list2[i]))));
 }
 
 __device__ void matrix_mult(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2, int ctr1_prev)
 {
+    // Function to do matrix multiplication
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j + ctr1] += arr1[j * dim2 + k + ctr2] * arr2[k + ctr1_prev];
@@ -65,12 +74,14 @@ __device__ void matrix_mult(double *arr1, double *arr2, int dim1, int dim2, doub
 
 void vector_add2(double *arr1, double *arr2, int dim, double *arr_res, int ctr)
 {
+    // Function to do vector addition
     for (int i = 0 + ctr; i < ctr + dim; i++)
         arr_res[i] = arr1[i] + arr2[i];
 }
 
 void matrix_mult2(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2, int ctr1_prev)
 {
+    // Function to do matrix multiplication
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j + ctr1] += arr1[j * dim2 + k + ctr2] * arr2[k + ctr1_prev];
@@ -78,18 +89,21 @@ void matrix_mult2(double *arr1, double *arr2, int dim1, int dim2, double *arr_re
 
 __device__ void vector_add(double *arr1, double *arr2, int dim, double *arr_res, int ctr)
 {
+    // Function to do vector addition
     for (int i = 0 + ctr; i < ctr + dim; i++)
         arr_res[i] = arr1[i] + arr2[i];
 }
 
 __device__ void dot_product(double *arr1, double *arr2, int dim, double *arr_res, int ctr)
 {
+    // Function to do dot product
     for (int i = 0; i < dim; i++)
         arr_res[i] = arr1[i] * arr2[i + ctr];
 }
 
 __device__ void matrix_mult_back(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2)
 {
+    // Function to do matrix multiplication during backpropagation
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j * dim2 + k + ctr1] += arr1[j] * arr2[k + ctr2];
@@ -97,19 +111,23 @@ __device__ void matrix_mult_back(double *arr1, double *arr2, int dim1, int dim2,
 
 __device__ void matrix_mult_back2(double *arr1, double *arr2, int dim1, int dim2, double *arr_res, int ctr1, int ctr2)
 {
+    // Function to do matrix multiplication during backpropagation
     for (int j = 0; j < dim1; j++)
         for (int k = 0; k < dim2; k++)
             arr_res[j] += arr1[j + k * dim1 + ctr1] * arr2[k];
 }
 
-__device__ void Forward_prop(double *X, double y, int i, double *w_list, double *b_list, int nh, int nl, double *error, double *der_blist, double *der_wlist)
+__device__ void prop(double *X, double y, int i, double *w_list, double *b_list, int nh, int nl, double *error, double *der_blist, double *der_wlist)
 {
+    // Function to do forward and backward propagation
     int b_list_size = nh * nl + output_nodes;
     int w_list_size = (nh * input_nodes) + (nl - 1) * nh * nh + output_nodes * nh;
     double *der_blist_temp = (double*)malloc((b_list_size) * sizeof(double));
     double *der_wlist_temp = (double*)malloc((w_list_size) * sizeof(double));
     initialise_with00(der_blist_temp, b_list_size);
     initialise_with00(der_wlist_temp, w_list_size);
+
+    // Creating arrays a and z
     double *a = (double*)malloc((nh * nl + output_nodes) * sizeof (double));
     double *z = (double*)malloc((nh * nl + output_nodes) * sizeof (double));
     double *del_error = (double*)malloc(output_nodes * sizeof(double));
@@ -124,6 +142,7 @@ __device__ void Forward_prop(double *X, double y, int i, double *w_list, double 
     j_ctr += nh;
     k_ctr += input_nodes * nh;
 
+    // In case there is more than one hidden layer
     for (int j = 0; j < nl - 1; j++)
     {
         matrix_mult(w_list, a, nh, nh, z, j_ctr, k_ctr, prev_j_ctr);
@@ -134,14 +153,13 @@ __device__ void Forward_prop(double *X, double y, int i, double *w_list, double 
         k_ctr += nh * nh;
     }
 
-
     matrix_mult(w_list, a, output_nodes, nh, z, j_ctr, k_ctr, prev_j_ctr);
     vector_add(z, b_list, output_nodes, z, j_ctr);
     sigmoid(j_ctr, a, output_nodes, z);
 
     double this_error = 0;
 
-
+    // Finding the error for this iteration
     for (int j = 0; j < output_nodes; j++)
     {
         if ((int)y == j)
@@ -149,9 +167,9 @@ __device__ void Forward_prop(double *X, double y, int i, double *w_list, double 
         else
             del_error[j] = a[j + j_ctr];
         this_error += pow(del_error[j], 2);
-    //    printf("%f ", del_error[j]);
     }
-    // printf("\n");
+
+    // To avoid race condition
     atomicAdd((double*) &error[0], this_error);
 
     // Back prop
@@ -173,37 +191,6 @@ __device__ void Forward_prop(double *X, double y, int i, double *w_list, double 
     int ctr = 1;
     double *temp;
 
-    
-
-    // for (int k = 0; k < nl - 1; k++)
-    // {
-    //     initialise_with00(del_l1, nh);
-    //     sigmoid_dash(j_ctr, z, nh, z);
-    //     if (ctr == 1)
-    //         matrix_mult_back2(w_list, del_l2, nh, output_nodes, del_l1, k_ctr, j_ctr);
-    //     else
-    //         matrix_mult_back2(w_list, del_l2, nh, nh, del_l1, k_ctr, j_ctr);
-    //     dot_product(del_l1, z, nh, del_l1, j_ctr);
-    
-    //     k_ctr -= nh * nh;
-
-    //     for (int j = 0; j < nh; j++)
-    //         der_blist_temp[j + j_ctr] += del_l1[j];
-
-    //     j_ctr -= nh;
-    //     matrix_mult_back(del_l1, a, nh, nh, der_wlist_temp, k_ctr, j_ctr);
-
-    //     if (ctr == 1)
-    //     {
-    //         del_l2 = (double*)realloc(del_l2, sizeof(double) * nh);
-    //         ctr = 0;
-    //     }
-    //     temp = del_l1;
-    //     del_l1 = del_l2;
-    //     del_l2 = temp;
-    // }
-
-    // double *del_l1 = (double*)malloc((nh) * sizeof (double));
     initialise_with00(del_l1, nh);
     sigmoid_dash(j_ctr, z, nh, z);
     matrix_mult_back2(w_list, del_l2, nh, output_nodes, del_l1, k_ctr, j_ctr);
@@ -219,13 +206,11 @@ __device__ void Forward_prop(double *X, double y, int i, double *w_list, double 
     for (int j = 0; j < w_list_size; j++)
     {
         atomicAdd((double*) &der_wlist[j], der_wlist_temp[j]);
-        // printf("%f ", der_wlist[j]);
     }
 
     for (int j = 0; j < b_list_size; j++)
     {
         atomicAdd((double*) &der_blist[j], der_blist_temp[j]);
-        // printf("%f ", der_blist[j]);
     }
 
 
@@ -245,7 +230,7 @@ __global__ void Main_loop(double *train_image, double *train_label, int loop_cnt
     int tid0 = blockIdx.x * blockDim.x + threadIdx.x;
     for (int i = loop_cnt * nb + tid0; i < (loop_cnt + 1) * nb; i += blockDim.x * gridDim.x)
     {
-        Forward_prop(&train_image[selection_list[i] * SIZE], train_label[selection_list[i]], selection_list[i], w_list, b_list, nh, nl, error, der_blist, der_wlist);
+        prop(&train_image[selection_list[i] * SIZE], train_label[selection_list[i]], selection_list[i], w_list, b_list, nh, nl, error, der_blist, der_wlist);
     }
 }
 
@@ -263,15 +248,25 @@ int main(int argc, char** argv)
 
     double alpha = 0.1;
 
+    // Number of hidden layers
     int nl = atoi(argv[1]);
+
+    // Number of nodes in each layer
     int nh = atoi(argv[2]);
+
+    // Number of epochs
     int ne = atoi(argv[3]);
+
+    // Batch Size
     int nb = atoi(argv[4]);
 
+    // Size of flattened b list and w list
     int b_list_size = nh * nl + output_nodes;
     int w_list_size = (nh * input_nodes) + (nl - 1) * nh * nh + output_nodes * nh;
     double *b_list = (double*)malloc((b_list_size) * sizeof(double));
     double *w_list = (double*)malloc((w_list_size) * sizeof(double));
+
+    // Derivative of flattened b and w array
     double *der_blist = (double*)malloc((b_list_size) * sizeof(double));
     double *der_wlist = (double*)malloc((w_list_size) * sizeof(double));
 
@@ -282,6 +277,7 @@ int main(int argc, char** argv)
     double *train_image_h = (double*)malloc((SIZE * NUM_TRAIN) * sizeof(double));
     double *test_image_h = (double*)malloc((SIZE * NUM_TRAIN) * sizeof(double));
 
+    // Flattening the images
     for (int i = 0; i < NUM_TRAIN; i++)
     {
         for (int j = 0; j < SIZE; j++)
@@ -300,6 +296,8 @@ int main(int argc, char** argv)
 
     double *train_image_c, *train_label_c, *w_list_c, *b_list_c, *der_wlist_c, *der_blist_c;
     int *selection_list_c;
+
+    // Initialising cuda arrays
     cudaMalloc((void **) &train_image_c, (SIZE * NUM_TRAIN)*sizeof(double));
     cudaMalloc((void **) &train_label_c, (SIZE * NUM_TRAIN)*sizeof(double));
     cudaMalloc((void **) &selection_list_c, (input_size)*sizeof(int));
@@ -308,6 +306,7 @@ int main(int argc, char** argv)
     cudaMalloc((void **) &der_wlist_c, (w_list_size)*sizeof(double));
     cudaMalloc((void **) &der_blist_c, (b_list_size)*sizeof(double));
 
+    // Creating a copy of train images and labels on CUDA
     cudaMemcpy(train_image_c,train_image_h,(SIZE * NUM_TRAIN)*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(train_label_c, train_label, (NUM_TRAIN) *sizeof(double), cudaMemcpyHostToDevice);
 
@@ -341,6 +340,8 @@ int main(int argc, char** argv)
             cudaMemcpy(error_c, error, (1) *sizeof(double), cudaMemcpyHostToDevice);
             initialise_with0(der_blist, b_list_size);
             initialise_with0(der_wlist, w_list_size);
+
+            // Creating copies using the results from the last iteration 
             cudaMemcpy(w_list_c, w_list,(w_list_size)*sizeof(double),cudaMemcpyHostToDevice);
             cudaMemcpy(b_list_c, b_list, (b_list_size) *sizeof(double), cudaMemcpyHostToDevice);  
             cudaMemcpy(der_wlist_c, der_wlist, (w_list_size) *sizeof(double), cudaMemcpyHostToDevice);
@@ -352,13 +353,10 @@ int main(int argc, char** argv)
             loop_cnt += 1;
             cum_error += error[0];
 
-            // for (int k = 0; k < 1; k++)
-            // {
-            //     printf("%f ", der_wlist_c[k]);
-            // }
-
             cudaMemcpy(der_blist, der_blist_c, b_list_size * sizeof(double), cudaMemcpyDeviceToHost);
             cudaMemcpy(der_wlist, der_wlist_c, w_list_size * sizeof(double), cudaMemcpyDeviceToHost);
+
+            // Updating w and b for the next iteration
             for (int k = 0; k < w_list_size; k++)
             {
                 w_list[k] -= (alpha * der_wlist[k] / nb);
@@ -366,6 +364,8 @@ int main(int argc, char** argv)
             for (int k = 0; k < b_list_size; k++)
                 b_list[k] -= (alpha * der_blist[k] / nb);
         }
+
+        // Finding and printing cumulative errors
         cum_error /= loop_cnt;
 
         if (j % 10 == 0)
@@ -378,6 +378,8 @@ int main(int argc, char** argv)
 
     printf("time elapsed device: %f(s)\n",  time_device/1000.);
 
+
+    // Calculating accuracy on train and test datasets
     int cnt = 0;
     for (int i = 0; i < input_size; i++)
     {
@@ -479,7 +481,7 @@ int main(int argc, char** argv)
     accuracy = (double)cnt / (double)10000;
     printf("Test Accuracy: %f\n", accuracy);
 
-
+    // Freeing up the memory
     for (int i = 0; i < NUM_TRAIN; i++)
     {
         free(train_image[i]);
@@ -494,8 +496,6 @@ int main(int argc, char** argv)
         free(test_label_char[i]);
     }
 
-    // free(a);
-    // free(z);
     free(error);
     cudaFree(error_c);
     cudaFree(w_list_c);
